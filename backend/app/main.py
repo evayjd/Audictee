@@ -6,7 +6,7 @@ from app.youtube_transcript import extract_video_id, fetch_transcript
 
 app = FastAPI()
 
-# 允许前端跨域（之后 Vue 会用到）
+# 允许前端跨域
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # 以后可以改成指定域名
@@ -29,3 +29,7 @@ def get_transcript(request: VideoRequest):
         return data
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+    
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8000)
