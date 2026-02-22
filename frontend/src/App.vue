@@ -31,6 +31,7 @@ const fetchTranscript = async () => {
     const res = await axios.post("http://localhost:8000/api/transcript", {
       url: url.value,
     })
+    // 确保后端返回的数据结构包含 sentences 且每个 sentence 有 tokens
     sentences.value = res.data.sentences 
   } catch (err) {
     console.error("Erreur API :", err)
@@ -139,7 +140,18 @@ onUnmounted(() => {
 
     <div 
       v-if="sentences.length > 0"
-      style="margin-top: 25px; max-height: 450px; overflow-y: auto; border: 1px solid #eee; border-radius: 12px; padding: 15px; background: #fff;"
+      style="
+      margin-top: 25px; 
+      max-height: 450px; 
+      overflow-y: 
+      auto; border: 1px solid #eee; 
+      border-radius: 12px; 
+      padding: 15px; 
+      background: #fff;
+      max-width: 700px;
+      margin-left: auto
+      margin-right: auto;
+      "
     >
       <div
         v-for="(s, index) in sentences"
@@ -147,19 +159,43 @@ onUnmounted(() => {
         :ref="el => { if (el) sentenceRefs[index] = el }"
         @click="seekTo(s.start)"
         :style="{
-          padding: '12px 15px',
-          margin: '8px 0',
+          padding: '14px 18px',
+          margin: '12px 0',
           cursor: 'pointer',
-          borderRadius: '8px',
+          borderRadius: '10px',
           transition: 'all 0.2s ease',
           backgroundColor: index === activeIndex ? '#fff9db' : 'transparent',
           borderLeft: index === activeIndex ? '4px solid #fcc419' : '4px solid transparent',
           color: index === activeIndex ? '#000' : '#444',
-          fontSize: '16px',
-          lineHeight: '1.5'
+          fontSize: '18px',
+          lineHeight: '1.8',
+          wordBreak: 'normal',
+          overflowWrap: 'break-word',
+          whiteSpace:'normal',
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems:'baseline',
+          columnGap: '0px'
         }"
       >
-        {{ s.text }}
+        <span
+          v-for="(token, tIndex) in s.tokens"
+          :key="tIndex"
+          :style="{
+            marginRight: '4px',
+            fontWeight: token.pos === 'VERB' ? 'bold' : 'normal',
+            color:
+              token.pos === 'NOUN'
+                ? '#a8c4e6'
+                : token.pos === 'VERB'
+                ? '#f4a4a4'
+                : token.pos === 'ADJ'
+                ? '#d9c36c'
+                : 'inherit' 
+          }"
+        >
+          {{ token.text }}
+        </span>
       </div>
     </div>
     
