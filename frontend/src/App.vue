@@ -393,7 +393,7 @@ onUnmounted(() => {
           columnGap: '0px'
         }"
       >
-        <!-- ✅ Grammar mode: token layout (supports fill-blank + popup) -->
+        <!-- Grammar mode: token layout (supports fill-blank + popup) -->
         <template v-if="grammarMode">
           <template v-for="(token, tIndex) in getTokens(s)" :key="tIndex">
             <!-- fill blank input: only for selected 30% NOUN/VERB -->
@@ -513,6 +513,23 @@ onUnmounted(() => {
             {{ popup.token.pos ?? "—" }}
           </div>
         </div>
+
+        <div>
+          <span style="font-size: 12px; color: #999;">Morph</span>
+          <div style="font-size: 14px; color: #222;">
+            <template v-if="popup.token.morph && Object.keys(popup.token.morph).length">
+              <span
+                v-for="(v, k) in popup.token.morph"
+                :key="k"
+                style="margin-right: 6px;"
+              >
+                {{ k }}={{ v }}
+              </span>
+            </template>
+            <span v-else>—</span>
+          </div>
+        </div>
+
       </div>
 
       <div style="margin-top: 8px; font-size: 12px; color: #999;">
