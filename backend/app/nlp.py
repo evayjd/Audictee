@@ -1,6 +1,10 @@
 import spacy
-nlp = spacy.load("fr_core_news_sm")
+from sentence_transformers import SentenceTransformer
+import numpy as np
+embedding_model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
 
+
+nlp = spacy.load("fr_core_news_sm")
 
 def analyze_sentences(sentences):
     """
@@ -8,7 +12,9 @@ def analyze_sentences(sentences):
     """
     texts = [s["text"] for s in sentences]
     docs = list(nlp.pipe(texts))
-    for sentence, doc in zip(sentences, docs):
+    vectors = embedding_model.encode(texts)
+    
+    for sentence, doc, vector in zip(sentences, docs, vectors):
         tokens = []
         for token in doc:
             if token.is_space:
@@ -26,6 +32,13 @@ def analyze_sentences(sentences):
             })
 
         sentence["tokens"] = tokens
-
-    return sentences
+        sentence["vector"] = vector.tolist()
+    matrix = np.array([s["vector"] for s in sentences])
+    similarities = matrix @ matrix.T
+    for i, sentence in enumerate(sentences):
+        sim_row = similarities[i]
+        sim_row[i] = -1  # 排除自己
+        most_similar_index = int(np.argmax(sim_row))
+        sentence["most_similar"] = most_similar_index
+    return sentences    
 

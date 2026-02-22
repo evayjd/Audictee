@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, nextTick, onMounted, onUnmounted } from "vue"
+import { ref, watch, nextTick, onMounted, onUnmounted, computed } from "vue"
 import axios from "axios"
 
 const url = ref("")
@@ -9,6 +9,9 @@ const loading = ref(false)
 const activeIndex = ref(-1)
 const sentenceRefs = ref([])
 const grammarMode = ref(true) // true: Grammar(tokens) / false: Reading(text)
+const similarIndex = ref(null)
+
+
 
 // ---- Fill-blank mode ----
 const fillBlankMode = ref(false)
@@ -17,6 +20,47 @@ const BLANK_RATIO = 0.3
 const blankMask = ref({})
 // answers[sIndex][tIndex] = { value, checked, correct }
 const answers = ref({})
+const wrongBank = ref({}) 
+const stats = computed(() => {
+  let total = 0
+  let correct = 0
+
+  for (const sIndex in answers.value) {
+    for (const tIndex in answers.value[sIndex]) {
+      total++
+      if (answers.value[sIndex][tIndex].correct) {
+        correct++
+      }
+    }
+  }
+
+  return {
+    total,
+    correct,
+    accuracy: total ? ((correct / total) * 100).toFixed(1) : 0
+  }
+})
+
+const wrongWords = computed(() => {
+  const map = {}
+
+  for (const sIndex in answers.value) {
+    for (const tIndex in answers.value[sIndex]) {
+      const entry = answers.value[sIndex][tIndex]
+
+      if (entry.checked && !entry.correct) {
+        const token = sentences.value[sIndex]?.tokens?.[tIndex]
+        const word = token?.text
+
+        if (word) {
+          map[word] = (map[word] || 0) + 1
+        }
+      }
+    }
+  }
+
+  return map
+})
 
 let interval = null
 let player = null
@@ -111,6 +155,13 @@ const checkAnswer = (sIndex, tIndex, token) => {
   const gold = normalize(token?.text) // 如果想用 lemma 判答案：改为 token?.lemma
   slot.checked = true
   slot.correct = user.length > 0 && user === gold
+  if(slot.checked && !slot.correct) {
+    const word = token?.text
+    if (word) {
+      wrongBank.value[word] = (wrongBank.value[word] || 0) + 1
+    }
+  }
+
 }
 
 const revealAnswer = (sIndex, tIndex, token) => {
@@ -130,20 +181,68 @@ const generateBlankMask = () => {
 
   sentences.value.forEach((s, sIndex) => {
     const tokens = getTokens(s)
+
     const candidates = tokens
       .map((t, i) => (shouldBlankCandidate(t) ? i : -1))
       .filter((i) => i !== -1)
 
     if (!candidates.length) return
 
-    const blankCount = Math.max(1, Math.floor(candidates.length * BLANK_RATIO))
-    const shuffled = [...candidates].sort(() => Math.random() - 0.5)
+    const blankCount = Math.max(
+      1,
+      Math.floor(candidates.length * BLANK_RATIO)
+    )
+
+    const weighted = []
+
+    candidates.forEach((i) => {
+      const token = tokens[i]
+      const word = token?.text
+
+      const weight = wrongBank.value[word] ? 3 : 1
+
+      for (let k = 0; k < weight; k++) {
+        weighted.push(i)
+      }
+    })
+
+    const shuffled = weighted.sort(() => Math.random() - 0.5)
 
     blankMask.value[sIndex] = {}
+
     shuffled.slice(0, blankCount).forEach((i) => {
       blankMask.value[sIndex][i] = true
     })
   })
+}
+
+const computeDifficulty = (sentence) => {
+  const tokens = getTokens(sentence)
+  if (!tokens.length) return 0
+
+  const tokenCount = tokens.length
+
+  const verbCount = tokens.filter(
+    (t) => t.pos === "VERB" || t.pos === "AUX"
+  ).length
+
+  const rareCount = tokens.filter(
+    (t) => wrongBank.value[t.text]
+  ).length
+
+  const rareRatio = rareCount / tokenCount
+
+  const lengthScore = Math.min(tokenCount / 25, 1) * 40
+  const verbScore = Math.min(verbCount / 5, 1) * 30
+  const rareScore = Math.min(rareRatio, 1) * 30
+  /*
+  该难度公式基于三个可解释假设：
+  句子越长认知负担越高（工作记忆限制），
+  动词数量越多通常结构越复杂（从句和嵌套结构增加），
+  而包含用户多次出错词的比例越高则个体理解难度越大，
+  因此通过对这三种因素加权线性组合得到一个可解释的启发式阅读难度评分。
+  */
+  return Math.round(lengthScore + verbScore + rareScore)
 }
 
 // ------- API -------
@@ -175,6 +274,14 @@ const fetchTranscript = async () => {
 const seekTo = (time) => {
   if (player && player.seekTo) {
     player.seekTo(time, true)
+  }
+}
+
+const handleSentenceClick = (s, index) => {
+  seekTo(s.start)
+
+  if (s.most_similar !== undefined) {
+    similarIndex.value = index === similarIndex.value ? null : index
   }
 }
 
@@ -347,6 +454,48 @@ onUnmounted(() => {
       "
     >
       <div id="player"></div>
+      <div
+        v-if="stats.total > 0"
+        style="
+          margin-top: 15px;
+          padding: 10px 14px;
+          background: #f8f9fa;
+          border-radius: 8px;
+          font-size: 14px;
+          display: flex;
+          justify-content: space-between;
+        "
+      >
+        <span>Filled: {{ stats.total }}</span>
+        <span>Correct: {{ stats.correct }}</span>
+        <span>Accuracy: {{ stats.accuracy }}%</span>
+      </div>
+
+      <div
+        v-if="Object.keys(wrongBank).length > 0"
+        style="
+          margin-top: 12px;
+          padding: 10px 14px;
+          background: #fff3f3;
+          border-radius: 8px;
+          font-size: 14px;
+        "
+      >
+        <div style="font-weight: 600; margin-bottom: 6px;">
+          Wrong words:
+        </div>
+
+        <div
+          v-for="(count, word) in wrongBank"
+          :key="word"
+        >
+          {{ word }} ({{ count }})
+        </div>
+
+      </div>
+
+
+
     </div>
 
     <div
@@ -370,7 +519,7 @@ onUnmounted(() => {
         :ref="(el) => {
           if (el) sentenceRefs[sIndex] = el
         }"
-        @click="seekTo(s.start)"
+        @click="handleSentenceClick(s, sIndex)"
         :style="{
           padding: '14px 18px',
           margin: '12px 0',
@@ -393,6 +542,16 @@ onUnmounted(() => {
           columnGap: '0px'
         }"
       >
+
+        <div style="
+        font-size:12px; 
+        color:#999; 
+        margin-bottom:6px;
+        display:block;
+        "
+        >
+          Difficulty: {{ computeDifficulty(s) }}
+        </div>
         <!-- Grammar mode: token layout (supports fill-blank + popup) -->
         <template v-if="grammarMode">
           <template v-for="(token, tIndex) in getTokens(s)" :key="tIndex">
@@ -457,10 +616,32 @@ onUnmounted(() => {
           </template>
         </template>
 
-        <!-- ✅ Reading mode: pure text -->
+        <!-- Reading mode: pure text -->
         <span v-else>
           {{ s.text }}
         </span>
+
+        <div
+          v-if="similarIndex === sIndex"
+          style="
+            margin-top:8px;
+            padding:8px;
+            background:#f8f9fa;
+            border-left:3px solid #ccc;
+            font-size:14px;
+            color:#555;
+          "
+        >
+          <div style="font-size:12px; color:#999; margin-bottom:4px;">
+            Most similar sentence:
+          </div>
+
+          <div v-if="sentences[s.most_similar]">
+            {{ sentences[s.most_similar].text }}
+          </div>
+        </div>
+
+
       </div>
     </div>
 
