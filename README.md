@@ -6,6 +6,16 @@ AUDICTEE is a full-stack web application for French listening and grammar practi
 have a try：**[Audictée](https://audictee-air.vercel.app)**
 
 
+由于免费计划限制，后端部署失败，因此我在localhost展示一下使用效果
+
+
+
+## Demo
+![Audictée Demo1](assets/demo1.jpg)
+![Audictée Demo2](assets/demo2.jpg)
+![Audictée Demo3](assets/demo3.jpg)
+
+
 以下是非我本人撰写的介绍：
 not written by me：
 

@@ -1,20 +1,10 @@
-from sentence_transformers import SentenceTransformer
 import spacy
+from sentence_transformers import SentenceTransformer
+import numpy as np
+embedding_model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
 
-embedding_model = None
-nlp = None
 
-def get_embedding_model():
-    global embedding_model
-    if embedding_model is None:
-        embedding_model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
-    return embedding_model
-
-def get_nlp():
-    global nlp
-    if nlp is None:
-        nlp = spacy.load("fr_core_news_sm")
-    return nlp
+nlp = spacy.load("fr_core_news_sm")
 
 def analyze_sentences(sentences):
     """
