@@ -10,11 +10,14 @@ have a try：**[Audictée](https://audictee-air.vercel.app)**
 
 
 
-## Demo
-![Audictée Demo1](assets/demo1.jpg)
-![Audictée Demo2](assets/demo2.jpg)
-![Audictée Demo3](assets/demo3.jpg)
 
+## Demo
+
+<p align="center">
+  <img src="assets/demo1.jpg" width="32%">
+  <img src="assets/demo2.jpg" width="32%">
+  <img src="assets/demo3.jpg" width="32%">
+</p>
 
 以下是非我本人撰写的介绍：
 not written by me：
