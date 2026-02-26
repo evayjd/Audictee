@@ -19,61 +19,80 @@ have a try：**[Audictée](https://audictee-air.vercel.app)**
   <img src="assets/demo3.jpg" width="32%">
 </p>
 
-以下是非我本人撰写的介绍：
-not written by me：
 
-## Features (Current Stable Version)
 
-### YouTube Transcript Loader
-- Paste a YouTube URL
-- Automatically fetch transcript
-- Merge segments into readable sentences
 
-### Linguistic Analysis (spaCy)
-Each sentence is processed with:
+
+# For youuuuu
+
+# 🎧 YouTube Transcript → AI French Learning
+
+Full-stack application that turns YouTube videos into interactive French learning exercises using NLP and deep learning.
+
+Supports:
+- 📡 YouTube official subtitles (API)
+- 🧠 Local Whisper ASR transcription
+
+---
+
+## ✨ Features
+
+### Transcript Processing
+- Fetch or transcribe video audio
+- Clean noise
+- Merge into sentence-level structure
+
+### Linguistic Analysis
+Powered by spaCy:
 - Tokenization
 - Lemma extraction
 - POS tagging
 - Morphological features
 - Character offsets
-- Punctuation detection
 
-###  Grammar Mode
-- Click a word to display:
-  - Text
-  - Lemma
-  - POS
-  - Morphological attributes
-
-### Fill-in-the-Blank Mode
-- Randomly hides NOUN and VERB tokens
-- User input validation
-- Accuracy tracking
-- Wrong word memory system
-
-### Sentence Difficulty Scoring
-Heuristic difficulty formula based on:
-- Sentence length
-- POS composition
-
-### Semantic Similarity (Deep Learning)
-- Sentence embeddings via `sentence-transformers`
-- Cosine similarity via vector dot product
-- Display most similar sentence interactively
+### Interactive Modes
+- **Grammar Mode**: Click any word to inspect lemma, POS, morphology  
+- **Fill-in-the-Blank**: Hide NOUN/VERB tokens with validation  
+- **Difficulty Scoring**: Heuristic sentence complexity  
+- **Semantic Similarity**: Sentence embeddings + cosine similarity  
 
 ---
 
-## Tech Stack
+## 🏗 Stack
 
-### Backend
-- Python
+**Backend**
 - FastAPI
 - spaCy (`fr_core_news_sm`)
-- SentenceTransformers (MiniLM multilingual)
+- SentenceTransformers (MiniLM)
 - NumPy
+- yt-dlp
+- faster-whisper
 
-### Frontend
-- Vue 3 (Composition API)
+**Frontend**
+- Vue 3
 - Vite
 - Axios
 
+---
+
+## Run Locally
+
+### Backend
+```bash
+cd backend
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+If using Whisper:
+
+brew install ffmpeg
+```bash
+brew install ffmpeg
+```
+
+### Frontend
+```bash
+cd frontend
+npm install
+npm run dev
+```
